@@ -1,82 +1,69 @@
 *** Settings ***
-# Run script robot Todaolist.robot
 Library           SeleniumLibrary
 Library           Collections
 
-Test Setup        Set up 
+Test Setup        Open Todo List Page
 Test Teardown     Close Browser
 
 *** Variables ***
 ${URL}             https://abhigyank.github.io/To-Do-List/
-${InputTask}       Buy groceries
-${AddItemButton}   //*[@class="material-icons"][normalize-space()='add']
-${TodoTask}        //*[@href="#todo"]  
-${Completed}       //*[@href="#completed"] 
-${DeleteTaskButton}      //*[@id="todo"]//*[@for="1"]/following-sibling::*[contains(@class,'delete')][text()='Delete']
-${Task}            //*[@id="text-1"]
-${DeleteCompleteTaskButton}        //button[contains(@class, 'mdl-button') and contains(@class, 'delete') and contains(text(), 'Delete')]
+${TASK}            Buy groceries
 
 *** Test Cases ***
-Test Adding New Tasks
-    [Tags]    @AddingTasks
-    [Setup]   Open Todo List Page
-    Add Task  ${InputTask}
+Verify Task Can Be Added
+    Given I open the to-do list page
+    When I add a new task    ${TASK}
+    Then I should see task in the incomplete list    ${TASK}
 
-Test Marking Tasks as Completed
-    [Tags]    @CompletingTasks
-    [Setup]   Open Todo List Page
-    Add Task  ${InputTask}
-    Mark Task as Completed  
+Verify Task Can Be Marked As Completed
+    Given I open the to-do list page
+    When I add a new task    ${TASK}
+    And I mark task as completed    ${TASK}
+    Then I should see task in completed list    ${TASK}
 
-Test Deleting Tasks
-    [Tags]    @DeletingTasks
-    [Setup]   Open Todo List Page
-    Add Task  ${InputTask}
-    Delete Task  
+Verify Task Can Be Deleted From Incomplete
+    Given I open the to-do list page
+    When I add a new task    ${TASK}
+    And I delete the task from incomplete list
+    Then I should not see task in the list    ${TASK}
 
-Test Deleting completed task
-    [Tags]     @DeletingCompleated 
-    [Setup]    Open Todo List Page
-    Add Task    ${InputTask}
-    Mark Task as Completed     
-    Delete Completed Task      ${InputTask}
+Verify Completed Task Can Be Deleted
+    Given I open the to-do list page
+    When I add a new task    ${TASK}
+    And I mark task as completed    ${TASK}
+    And I delete the task from completed list
+    Then I should not see task in the list    ${TASK}
 
 *** Keywords ***
-Set up 
-    Open Browser    ${URL}    chrome
-    Set Selenium Speed     2S
-
 Open Todo List Page
-    Open Browser    ${URL}    Chrome 
+    Open Browser    ${URL}    Chrome
+    Maximize Browser Window
     Wait Until Page Contains Element    id=new-task
 
-Add Task
+Add A New Task
     [Arguments]    ${task}
     Input Text    id=new-task    ${task}
-    Wait Until Element Is Visible    ${AddItemButton}     
-    Click Element    ${AddItemButton} 
+    Click Element    xpath=//*[@class="material-icons"][normalize-space()='add']
 
-Mark Task as Completed
-    Wait Until Element Is Visible    ${TodoTask}      
-    Click Element    ${TodoTask}  
-    Wait Until Element Is Visible    ${Task}     
-    Click Element    ${Task}   
-    Wait Until Element Is Visible    ${Completed}    
-    Click Element    ${Completed}  
-
-Delete Task
-    Wait Until Element Is Visible    ${TodoTask}   
-    Click Element    ${TodoTask}
-    Wait Until Element Is Visible    ${DeleteTaskButton}     
-    Click Button    ${DeleteTaskButton} 
-    Wait Until Element Is Visible     ${Completed}      
-    Click Element    ${Completed}  
-
-
-Delete Completed Task      
+Mark Task As Completed
     [Arguments]    ${task}
-    Wait Until Element Is Visible    ${Completed}      
-    Click Element    ${Completed}  
-    Wait Until Element Is Visible     ${DeleteCompleteTaskButton}    timeout=10s
-    Click Element    ${DeleteCompleteTaskButton} 
-    # //*[@id="completed"]//*[@id="completed-tasks"]//*[text()='${task}']/following-sibling::*[contains(@class,'delete')]
+    Click Element    xpath=//*[@id="text-1"]  # basic logic assuming 1st task
+    Sleep    1s  # allow DOM update
+
+Delete The Task From Incomplete List
+    Click Element    xpath=//*[@id="todo"]//*[@for="1"]/following-sibling::*[contains(@class,'delete')]
+
+Delete The Task From Completed List
+    Click Element    xpath=//div[@id="completed"]//button[contains(@class,'delete')]
+
+I Should See Task In The Incomplete List
+    [Arguments]    ${task}
+    Element Should Contain    xpath=//ul[@id="incomplete-tasks"]    ${task}
+
+I Should See Task In Completed List
+    [Arguments]    ${task}
+    Element Should Contain    xpath=//ul[@id="completed-tasks"]    ${task}
+
+I Should Not See Task In The List
+    [Arguments]    ${task}
+    Page Should Not Contain    ${task}
